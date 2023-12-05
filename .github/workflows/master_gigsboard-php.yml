@@ -55,6 +55,6 @@ jobs:
     steps:
      - name: Move file
        run: |
-          mv /home/sumanth.n/actions-runner/_work/php-docs-hello-world/php-docs-hello-world /home/sumanth.n/actions-runner/_work/php-docs-hello-world/php-docs-hello-world/prod
+          mv /home/sumanth.n/actions-runner/_work/php-docs-hello-world/php-docs-hello-world/release.zip /home/sumanth.n/actions-runner/prod
          
        
