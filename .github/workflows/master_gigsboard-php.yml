@@ -1,21 +1,23 @@
-
-name: Build and Deploy PHP App to Azure VM
+name: PRODDeploy
+ 
+env: 
+  PHP_VERSION: '8.x'        
+  CI : false
 on:
   push:
     branches:
-      - master
+      - Production
  
 jobs:
   build:
     runs-on: self-hosted
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
  
-      - name: Set up PHP
-        uses: shivammathur/setup-php@v2
+    steps:   
+ 
+      - name: Setup PHP        
+        uses: actions/checkout@v2
         with:
-          php-version: '7.4'
+          php-version: ${{ env.PHP_VERSION }}
  
       - name: Check if composer.json exists
         id: check_files
@@ -28,7 +30,6 @@ jobs:
         if: steps.check_files.outputs.files_exists == 'true'
         run: |
           echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
- 
       - name: Set up dependency caching for faster installs
         uses: actions/cache@v3
         if: steps.check_files.outputs.files_exists == 'true'
@@ -37,54 +38,13 @@ jobs:
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
           restore-keys: |
             ${{ runner.os }}-composer-
- 
       - name: Run composer install if composer.json exists
         if: steps.check_files.outputs.files_exists == 'true'
         run: composer validate --no-check-publish && composer install --prefer-dist --no-progress
- 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
+      - name: Zip artifact for deployment
+        run: zip release.zip ./* -r
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v3
         with:
-          name: php-app
-          path: relese.zip
- 
-  deploy:
-    runs-on: self-hosted
-    needs: build
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v3
-        with:
-          name: php-app
- 
-      - name: Debugging - List files in working directory
-        run: ls -al
- 
-      - name: Debugging - List files in artifact
-        run: unzip -l php-app.zip
- 
-      - name: Unzip artifact for deployment
-        run: unzip php-app.zip
- 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
- 
-      - name: Build and Push Docker image
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          push: true
-          tags:appleboy: latest
-          build-args: |
-            # Add any build arguments if needed
- 
-      - name: 'Deploy to Azure VM'
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host: ${{secrets.HOST}}
-          username: ${{secrets.USER}}
-          port: ${{secrets.PORT}}
-          password: ${{secrets.PASS}}
-          source: ./
-          target: /var/www/html/Prod2
-          strip_components: 1
+          name: php-docs-hello-world
+          path: release.zip
